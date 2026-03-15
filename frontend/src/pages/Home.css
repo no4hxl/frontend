@@ -1,0 +1,135 @@
+.home-page {
+    animation: fadeIn 0.8s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hero Section */
+.hero-section {
+    padding: 100px 0;
+    text-align: center;
+    background-color: var(--bg-mint-grey);
+}
+
+.hero-content h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: var(--header-midnight);
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+}
+
+.hero-content h1 span {
+    color: var(--primary-sage);
+}
+
+.hero-content p {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    max-width: 700px;
+    margin: 0 auto 2.5rem;
+    color: #555;
+    padding: 0 1rem;
+}
+
+.hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+/* Button styles */
+.btn {
+    padding: 1rem 2rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: var(--transition-fast);
+    min-width: 160px;
+}
+
+.btn-primary {
+    background-color: var(--primary-sage);
+    color: white;
+}
+
+.btn-primary:hover {
+    filter: brightness(1.1);
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(79, 121, 66, 0.3);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--primary-sage);
+    border: 2px solid var(--primary-sage);
+}
+
+.btn-secondary:hover {
+    background-color: var(--accent-mint);
+    transform: translateY(-3px);
+}
+
+/* Features Section */
+.features-section {
+    padding: 80px 0;
+    background-color: white;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.feature-card {
+    padding: 2rem;
+    border-radius: 12px;
+    background-color: var(--bg-mint-grey);
+    transition: var(--transition-fast);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border-color: var(--primary-sage);
+}
+
+.feature-card h3 {
+    color: var(--header-midnight);
+    margin-bottom: 1rem;
+    font-size: 1.35rem;
+}
+
+.feature-card p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 60px 0;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .btn {
+        width: 90%;
+        max-width: 300px;
+    }
+}

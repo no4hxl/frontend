@@ -1,0 +1,125 @@
+.login-page {
+    min-height: calc(100vh - 160px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.login-card {
+    background: white;
+    width: 100%;
+    max-width: 450px;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.login-header h2 {
+    color: var(--header-midnight);
+    font-size: clamp(1.4rem, 4vw, 1.8rem);
+    margin-bottom: 0.5rem;
+}
+
+.login-header p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Role Switcher */
+.role-switcher {
+    display: flex;
+    background: var(--bg-mint-grey);
+    padding: 0.4rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.switch-btn {
+    flex: 1;
+    padding: 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #666;
+    background: transparent;
+    transition: var(--transition-fast);
+}
+
+.switch-btn.active {
+    background: white;
+    color: var(--primary-sage);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--header-midnight);
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--bg-mint-grey);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: var(--transition-fast);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-sage);
+    background-color: var(--accent-mint);
+}
+
+.login-submit-btn {
+    width: 100%;
+    padding: 1rem;
+    background-color: var(--primary-sage);
+    color: white;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-top: 0.5rem;
+    transition: var(--transition-fast);
+}
+
+.login-submit-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.login-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    border-top: 1px solid var(--bg-mint-grey);
+    padding-top: 1rem;
+}
+
+.back-btn {
+    background: transparent;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 480px) {
+    .login-card {
+        padding: 1.5rem;
+    }
+}
