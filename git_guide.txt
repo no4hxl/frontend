@@ -1,0 +1,57 @@
+# 🚀 Git Pro-Tip: How to Commit & Push Your Code
+
+It looks like the recent documentation and annotations are **already committed** to your local branch (`frontend-overhaul`). However, here is a quick guide on how to handle your code in the future and how to "Push" these changes to GitHub.
+
+---
+
+## 🛠️ The Standard Workflow
+
+When you make changes to your code, follow these three steps:
+
+### 1. Stage Your Changes (The "Packing" Phase)
+Before you commit, you need to tell Git which files you want to include.
+```bash
+# Add all changes in the current directory
+git add .
+
+# OR add a specific file
+git add backend/server.js
+```
+
+### 2. Commit Your Changes (The "Snapshot" Phase)
+This saves your staged changes with a descriptive message.
+```bash
+git commit -m "feat: added code annotations and project structure guide"
+```
+
+### 3. Push to GitHub (The "Upload" Phase)
+This sends your local commits to the remote repository so others (or yourself on another machine) can see them.
+```bash
+git push origin frontend-overhaul
+```
+
+---
+
+## 🔍 Checking Your Current Status
+
+If you ever want to see what's going on with your files, use these commands:
+
+- **Check for modified/untracked files**:
+  ```bash
+  git status
+  ```
+
+- **See your recent history**:
+  ```bash
+  git log --oneline -n 5
+  ```
+
+---
+
+## 💡 What just happened?
+In this session, the changes were automatically snapshotted into commit `7b99b15`. 
+
+**To get these changes onto your remote repository right now, you just need to run:**
+```bash
+git push origin frontend-overhaul
+```
