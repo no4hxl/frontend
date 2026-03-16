@@ -21,7 +21,9 @@ const Home = () => {
                             A centralized web-based platform for lecture and examination scheduling.
                         </p>
                         <div className="hero-actions">
-                            <button className="btn btn-primary" onClick={() => navigate('/student')}>View Schedule</button>
+                            <button className="btn btn-primary" onClick={() => navigate('/student')}>
+                                View Schedule
+                            </button>
                             <button className="btn btn-secondary" onClick={() => navigate('/login')}>
                                 Access Portal
                             </button>
@@ -35,8 +37,8 @@ const Home = () => {
                 <div className="container">
                     <div className="features-grid">
                         <div className="feature-card">
-                            <h3>Automated Scheduling</h3>
-                            <p>Eliminate manual errors with our high-performance automated scheduling algorithm.</p>
+                            <h3>Clash-Free Scheduling</h3>
+                            <p>Prevents lecture time conflicts across departments, ensuring no two classes overlap for students or venues.</p>
                         </div>
                         <div className="feature-card">
                             <h3>Conflict-Free</h3>

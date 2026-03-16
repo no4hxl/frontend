@@ -6,10 +6,29 @@
     color: #333;
 }
 
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
 .lecturer-dashboard h2 {
-    text-align: center;
+    margin: 0;
     color: #2c3e50;
-    margin-bottom: 30px;
+}
+
+.user-badge {
+    background-color: #ecf0f1;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #34495e;
+    border: 1px solid #dcdde1;
+}
+
+.user-badge strong {
+    color: #3498db;
 }
 
 /* Navigation Tabs */
@@ -86,6 +105,21 @@
 
 .schedule-table tr:hover {
     background-color: #fcfcfc;
+}
+
+.cancel-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.3s;
+}
+
+.cancel-btn:hover {
+    background-color: #c0392b;
 }
 
 /* Set Class Form */

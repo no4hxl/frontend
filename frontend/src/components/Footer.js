@@ -13,7 +13,7 @@ const Footer = () => {
             <div className="container footer-content">
                 <div className="footer-info">
                     <p>&copy; 2026 Faculty Of Science Lecture Scheduling System</p>
-                    <small>Automated · Conflict-Free · Efficient</small>
+                    <small>Clash-Free · Conflict-Free · Efficient</small>
                 </div>
             </div>
         </footer>

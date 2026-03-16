@@ -1,13 +1,18 @@
 export const departments = [
-    "Computer Science",
-    "Mathematics",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "Statistics"
+    { id: 1, name: "Computer Science" },
+    { id: 2, name: "Mathematics" },
+    { id: 3, name: "Physics" },
+    { id: 4, name: "Chemistry" },
+    { id: 5, name: "Biology" },
+    { id: 6, name: "Statistics" }
 ];
 
-export const levels = ["100", "200", "300", "400"];
+export const levels = [
+    { id: 1, name: "100" },
+    { id: 2, name: "200" },
+    { id: 3, name: "300" },
+    { id: 4, name: "400" }
+];
 
 export const courses = [
     { code: "CSC101", title: "Introduction to Computer Science" },

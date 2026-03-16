@@ -1,42 +1,48 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './Header.css';
 
 /**
  * Header Component
  * 
- * Displays the Faculty Of Science Lecture Schedule title and 
- * navigation links. Includes a mobile menu toggle for responsiveness.
+ * Displays the University logo/title and provides authentication-related actions.
+ * Shows user status and provide logout when authenticated.
  */
 const Header = () => {
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
 
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen);
-    };
-
-    const closeMobileMenu = () => {
-        setIsMobileMenuOpen(false);
+    /**
+     * Handles logout action
+     */
+    const handleLogout = () => {
+        logout();
+        navigate('/');
     };
 
     return (
         <header className="main-header">
             <div className="container header-content">
                 <div className="logo">
-                    <Link to="/" onClick={closeMobileMenu}>
-                        <h1>Faculty Of Science Lecture <span>Schedule</span></h1>
+                    <Link to="/">
+                        <h1>University Of <span>Abuja</span></h1>
                     </Link>
                 </div>
 
-                {/* Desktop and Mobile Navigation */}
-                <nav className={`nav-links ${isMobileMenuOpen ? 'mobile-active' : ''}`}>
-                    <Link to="/login#admin" onClick={closeMobileMenu}>Administrator</Link>
-                </nav>
-
-                {/* Mobile Toggle Icon */}
-                <div className="mobile-toggle" onClick={toggleMobileMenu}>
-                    {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+                {/* Authentication Menu */}
+                <div className="auth-menu">
+                    {user.isAuthenticated && (
+                        <div className="user-info">
+                            <span className="welcome-text">
+                                Welcome, <strong>{user.name}</strong> 
+                                <span className="role-tag">{user.role}</span>
+                            </span>
+                            <button className="logout-btn" onClick={handleLogout}>
+                                Logout
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </header>

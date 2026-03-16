@@ -72,3 +72,58 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-sage);
 }
+
+/* Responsive Table Wrapper */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile Responsive Table to Cards */
+@media (max-width: 768px) {
+  .schedule-table, .schedule-table tbody, .schedule-table tr, .schedule-table td {
+      display: block;
+      width: 100%;
+  }
+  
+  .schedule-table thead {
+      display: none;
+  }
+  
+  .schedule-table tr {
+      margin-bottom: 20px;
+      border: 1px solid #ecf0f1;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  
+  .schedule-table td {
+      border: none;
+      border-bottom: 1px solid #ecf0f1;
+      padding: 12px 15px 12px 130px !important;
+      position: relative;
+      text-align: right;
+      min-height: 40px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+  }
+  
+  .schedule-table td::before {
+      content: attr(data-label);
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 100px;
+      font-weight: bold;
+      text-align: left;
+      color: var(--header-midnight);
+  }
+  
+  .schedule-table td:last-child {
+      border-bottom: none;
+  }
+}

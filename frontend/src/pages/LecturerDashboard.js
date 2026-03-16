@@ -1,42 +1,106 @@
-import React, { useState } from 'react';
-import { departments, levels, courses, venues, scheduleData } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import { dataAPI, scheduleAPI } from '../services/api';
 import './LecturerDashboard.css';
 
 /**
  * LecturerDashboard Component
  * 
- * Purpose: Allows lecturers to view their schedule, set new classes, and check venue availability.
- * Features:
- * - Tabbed navigation (My Schedule, Set a Class, Check Venue).
- * - Conflict detection to prevent double-booking venues.
- * - View filtered schedule by venue.
+ * Provides features for lecturers to:
+ * 1. View their personal teaching schedule.
+ * 2. Set new class slots with automatic conflict detection.
+ * 3. Check specific venue availability to avoid booking conflicts.
  */
 const LecturerDashboard = () => {
+    // Current user context (id, name, role)
+    const { user } = useAuth();
+    
+    // UI state for navigation and loading indicators
     const [activeTab, setActiveTab] = useState('my_schedule');
+    const [loading, setLoading] = useState(false);
 
-    // Local state to hold the schedule, initialized with mock data
-    const [schedule, setSchedule] = useState(scheduleData);
-
-    // State for "Set a Class" form
-    const [newClass, setNewClass] = useState({
-        department: '',
-        level: '',
-        courseCode: '',
-        day: '',
-        time: '',
-        venue: '',
-        lecturer: 'Dr. Adebayo' // default lecturer for now, or could come from login context
+    // Cached metadata for dropdowns (Depts, Levels, etc.)
+    const [metadata, setMetadata] = useState({
+        departments: [],
+        levels: [],
+        courses: [],
+        venues: []
     });
 
-    // State for "Check Venue" selection
-    const [selectedVenue, setSelectedVenue] = useState('');
+    // Master list of all scheduled classes
+    const [schedule, setSchedule] = useState([]);
 
-    // Fixed options for Days and Time Slots to make matching easier
+    // Temporary storage for the "Set a Class" form
+    const [newClass, setNewClass] = useState({
+        departmentId: '',
+        levelId: '',
+        courseCode: '',
+        day: '',
+        timeSlot: '',
+        venueId: ''
+    });
+
+    // Search state for "Check Venue" tab
+    const [selectedVenueId, setSelectedVenueId] = useState('');
+
+    // Shared constants for timetable logic
     const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
     const timeSlots = ["08:00 - 10:00", "10:00 - 12:00", "12:00 - 14:00", "14:00 - 16:00", "16:00 - 18:00"];
 
     /**
-     * Handle form input changes for setting a class
+     * Effect Hook: Fetches organizational metadata on component mount.
+     */
+    useEffect(() => {
+        const fetchMetadata = async () => {
+            try {
+                const [d, v, l, c] = await Promise.all([
+                    dataAPI.getDepartments(),
+                    dataAPI.getVenues(),
+                    dataAPI.getLevels(),
+                    dataAPI.getCourses()
+                ]);
+                setMetadata({
+                    departments: d.data,
+                    venues: v.data,
+                    levels: l.data,
+                    courses: c.data
+                });
+            } catch (error) {
+                toast.error("Failed to load metadata.");
+            }
+        };
+        fetchMetadata();
+    }, []);
+
+    /**
+     * fetchSchedules
+     * Synchronizes the timetable data with the server.
+     * 
+     * @param {boolean} isSilent - If true, re-fetches without showing a full-screen loader.
+     */
+    const fetchSchedules = async (isSilent = false) => {
+        if (!isSilent) setLoading(true);
+        
+        try {
+            const res = await scheduleAPI.getAll();
+            setSchedule(res.data);
+        } catch (error) {
+            console.error("Failed to fetch schedules:", error);
+            toast.error("Unable to update schedule data.");
+        } finally {
+            if (!isSilent) setLoading(false);
+        }
+    };
+
+    // Initial data fetch on mount
+    useEffect(() => {
+        fetchSchedules(false);
+    }, []);
+
+    /**
+     * handleInputChange
+     * Updates the specialized "Set a Class" form state.
      */
     const handleInputChange = (e) => {
         setNewClass({
@@ -46,115 +110,133 @@ const LecturerDashboard = () => {
     };
 
     /**
-     * Submit handler for setting a new class
-     * Includes CONFLICT VALIDATION
+     * handleSetClass
+     * Submits a new schedule request to the server.
+     * Triggers a background refresh on success.
      */
-    const handleSetClass = (e) => {
+    const handleSetClass = async (e) => {
         e.preventDefault();
 
-        // 1. Basic Validation
-        if (!newClass.department || !newClass.level || !newClass.courseCode || !newClass.day || !newClass.time || !newClass.venue) {
-            alert("Please fill in all fields.");
+        // Validation: Ensure all fields are selected before sending to API
+        if (!newClass.departmentId || !newClass.levelId || !newClass.courseCode || !newClass.day || !newClass.timeSlot || !newClass.venueId) {
+            toast.warning("Please fill in all required fields.");
             return;
         }
 
-        // 2. Conflict Detection
-        // Check if ANY class in the current schedule has the SAME Day, SAME Time, and SAME Venue
-        const hasConflict = schedule.some((item) => {
-            return (
-                item.day === newClass.day &&
-                item.time === newClass.time &&
-                item.venue === newClass.venue
-            );
-        });
-
-        if (hasConflict) {
-            alert(`CONFLICT ERROR: ${newClass.venue} is already booked on ${newClass.day} at ${newClass.time}. Please choose another time or venue.`);
-            return;
+        try {
+            const payload = {
+                ...newClass,
+                lecturerId: user.id
+            };
+            await scheduleAPI.create(payload);
+            toast.success("Class scheduled successfully!");
+            
+            // Success: Reset form and refresh list silently
+            setNewClass({
+                departmentId: '',
+                levelId: '',
+                courseCode: '',
+                day: '',
+                timeSlot: '',
+                venueId: ''
+            });
+            fetchSchedules(true); 
+        } catch (error) {
+            // Display conflict details returned by the server (e.g., Venue already booked)
+            const errorMsg = error.response?.data?.message || "Scheduling conflict detected.";
+            toast.error(errorMsg);
         }
-
-        // 3. Add to Schedule
-        const classToAdd = {
-            id: Date.now(),
-            ...newClass
-        };
-
-        setSchedule([...schedule, classToAdd]);
-        alert("Class scheduled successfully!");
-
-        // Reset form (keeping lecturer same for convenience)
-        setNewClass({
-            department: '',
-            level: '',
-            courseCode: '',
-            day: '',
-            time: '',
-            venue: '',
-            lecturer: newClass.lecturer
-        });
     };
 
     /**
-     * Renders the "My Schedule" tab content
+     * handleDeleteClass
+     * Cancels an existing scheduled class slot.
+     */
+    const handleDeleteClass = async (id) => {
+        try {
+            await scheduleAPI.delete(id);
+            toast.info("Class has been successfully cancelled.");
+            fetchSchedules(true); 
+        } catch (error) {
+            toast.error("Failed to cancel class.");
+        }
+    };
+
+    /**
+     * renderMySchedule
+     * Displays a customized table of classes taught by the current lecturer.
      */
     const renderMySchedule = () => {
-        // For simplicity, we show ALL items or filter by a hardcoded "current user"
-        // Since we don't have real auth user details, we'll filter by "Dr. Adebayo" or just show all for demo
-        // Let's show everything so the user sees data immediately
-        const myClasses = schedule;
+        const myClasses = schedule.filter(item => item.lecturerId === user.id);
 
         return (
             <div className="tab-section">
                 <h3>My Upcoming Classes</h3>
-                <table className="schedule-table">
-                    <thead>
-                        <tr>
-                            <th>Day</th>
-                            <th>Time</th>
-                            <th>Course</th>
-                            <th>Venue</th>
-                            <th>Class</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {myClasses.map((item) => (
-                            <tr key={item.id}>
-                                <td>{item.day}</td>
-                                <td>{item.time}</td>
-                                <td>{item.courseCode}</td>
-                                <td>{item.venue}</td>
-                                <td>{item.department} {item.level}L</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <p className="hint-text">Showing classes scheduled for <strong>{user.name}</strong></p>
+                {loading ? <p>Loading...</p> : myClasses.length > 0 ? (
+                    <div className="table-responsive">
+                        <table className="schedule-table">
+                            <thead>
+                                <tr>
+                                    <th>Day</th>
+                                    <th>Time</th>
+                                    <th>Course</th>
+                                    <th>Venue</th>
+                                    <th>Class</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {myClasses.map((item) => (
+                                    <tr key={item.id}>
+                                        <td data-label="Day">{item.day}</td>
+                                        <td data-label="Time">{item.timeSlot}</td>
+                                        <td data-label="Course">{item.Course?.code || item.CourseCode}</td>
+                                        <td data-label="Venue">{item.Venue?.name}</td>
+                                        <td data-label="Class">{item.Level?.name} Lvl, {item.Department?.name}</td>
+                                        <td data-label="Action">
+                                            <button className="cancel-btn" onClick={() => handleDeleteClass(item.id)}>
+                                                Cancel
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="empty-state">
+                        <p>You have no classes scheduled yet.</p>
+                    </div>
+                )}
             </div>
         );
     };
 
     /**
-     * Renders the "Set a Class" form
+     * renderSetClass
+     * Renders a multi-input form for scheduling new blocks.
      */
     const renderSetClass = () => {
         return (
             <div className="tab-section">
                 <h3>Set a New Class</h3>
-                <p className="hint-text">Schedule a lecture or exam. The system will prevent double booking.</p>
+                <p className="hint-text">The system will automatically prevent double-booking of venues.</p>
 
                 <form className="set-class-form" onSubmit={handleSetClass}>
                     <div className="form-row">
                         <div className="form-group">
                             <label>Department</label>
-                            <select name="department" value={newClass.department} onChange={handleInputChange}>
+                            <select name="departmentId" value={newClass.departmentId} onChange={handleInputChange}>
                                 <option value="">Select Department</option>
-                                {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                                {metadata.departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                             </select>
                         </div>
                         <div className="form-group">
                             <label>Level</label>
-                            <select name="level" value={newClass.level} onChange={handleInputChange}>
+                            <select name="levelId" value={newClass.levelId} onChange={handleInputChange}>
                                 <option value="">Select Level</option>
-                                {levels.map(l => <option key={l} value={l}>{l}</option>)}
+                                {metadata.levels.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
                             </select>
                         </div>
                     </div>
@@ -164,12 +246,12 @@ const LecturerDashboard = () => {
                             <label>Course</label>
                             <select name="courseCode" value={newClass.courseCode} onChange={handleInputChange}>
                                 <option value="">Select Course</option>
-                                {courses.map(c => <option key={c.code} value={c.code}>{c.code} - {c.title}</option>)}
+                                {metadata.courses.map(c => <option key={c.code} value={c.code}>{c.code} - {c.title}</option>)}
                             </select>
                         </div>
                         <div className="form-group">
-                            <label>Lecturer</label>
-                            <input type="text" name="lecturer" value={newClass.lecturer} disabled className="disabled-input" />
+                            <label>Lecturer (Self)</label>
+                            <input type="text" value={user.name} disabled className="disabled-input" />
                         </div>
                     </div>
 
@@ -183,7 +265,7 @@ const LecturerDashboard = () => {
                         </div>
                         <div className="form-group">
                             <label>Time Slot</label>
-                            <select name="time" value={newClass.time} onChange={handleInputChange}>
+                            <select name="timeSlot" value={newClass.timeSlot} onChange={handleInputChange}>
                                 <option value="">Select Time</option>
                                 {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
@@ -192,9 +274,9 @@ const LecturerDashboard = () => {
 
                     <div className="form-group">
                         <label>Venue</label>
-                        <select name="venue" value={newClass.venue} onChange={handleInputChange}>
+                        <select name="venueId" value={newClass.venueId} onChange={handleInputChange}>
                             <option value="">Select Venue</option>
-                            {venues.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+                            {metadata.venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                         </select>
                     </div>
 
@@ -205,11 +287,12 @@ const LecturerDashboard = () => {
     };
 
     /**
-     * Renders the "Check Venue" tab
+     * renderCheckVenue
+     * Allows checking any venue to see its full occupancy across the week.
      */
     const renderCheckVenue = () => {
-        // Filter bookings for the selected venue
-        const venueBookings = schedule.filter(item => item.venue === selectedVenue);
+        const venueBookings = schedule.filter(item => item.VenueId === parseInt(selectedVenueId));
+        const selectedVenueName = metadata.venues.find(v => v.id === parseInt(selectedVenueId))?.name;
 
         return (
             <div className="tab-section">
@@ -218,36 +301,38 @@ const LecturerDashboard = () => {
 
                 <div className="venue-selector">
                     <label>Select Venue:</label>
-                    <select value={selectedVenue} onChange={(e) => setSelectedVenue(e.target.value)}>
-                        <option value="">-- Choose a Room --</option>
-                        {venues.map(v => <option key={v.id} value={v.name}>{v.name}</option>)}
+                    <select value={selectedVenueId} onChange={(e) => setSelectedVenueId(e.target.value)}>
+                        <option value="">-- Select Venue --</option>
+                        {metadata.venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                     </select>
                 </div>
 
-                {selectedVenue && (
+                {selectedVenueId && (
                     <div className="venue-schedule">
-                        <h4>Schedule for {selectedVenue}</h4>
+                        <h4>Schedule for {selectedVenueName}</h4>
                         {venueBookings.length > 0 ? (
-                            <table className="schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th>Day</th>
-                                        <th>Time</th>
-                                        <th>Course</th>
-                                        <th>Lecturer</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {venueBookings.map(item => (
-                                        <tr key={item.id}>
-                                            <td>{item.day}</td>
-                                            <td>{item.time}</td>
-                                            <td>{item.courseCode}</td>
-                                            <td>{item.lecturer}</td>
+                            <div className="table-responsive">
+                                <table className="schedule-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Time</th>
+                                            <th>Course</th>
+                                            <th>Lecturer</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {venueBookings.map(item => (
+                                            <tr key={item.id}>
+                                                <td data-label="Day">{item.day}</td>
+                                                <td data-label="Time">{item.timeSlot}</td>
+                                                <td data-label="Course">{item.Course?.code || item.CourseCode}</td>
+                                                <td data-label="Lecturer">{item.lecturer?.name}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         ) : (
                             <div className="empty-state">
                                 <p>No classes scheduled in this venue yet. It is completely free.</p>
@@ -261,9 +346,12 @@ const LecturerDashboard = () => {
 
     return (
         <div className="lecturer-dashboard">
-            <h2>Lecturer Portal</h2>
+            <header className="dashboard-header">
+                <h2>Lecturer Portal</h2>
+                <span className="user-badge">Signed in as: <strong>{user.name}</strong></span>
+            </header>
 
-            <div className="dashboard-nav">
+            <nav className="dashboard-nav">
                 <button
                     className={activeTab === 'my_schedule' ? 'active' : ''}
                     onClick={() => setActiveTab('my_schedule')}
@@ -282,15 +370,16 @@ const LecturerDashboard = () => {
                 >
                     Check Venue
                 </button>
-            </div>
+            </nav>
 
-            <div className="dashboard-body">
+            <main className="dashboard-body">
                 {activeTab === 'my_schedule' && renderMySchedule()}
                 {activeTab === 'set_class' && renderSetClass()}
                 {activeTab === 'check_venue' && renderCheckVenue()}
-            </div>
+            </main>
         </div>
     );
 };
 
 export default LecturerDashboard;
+

@@ -1,11 +1,63 @@
-import React, { useState } from 'react';
-import { departments, levels, scheduleData } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { dataAPI, scheduleAPI } from '../services/api';
 import './StudentSchedule.css';
 
 const StudentSchedule = () => {
+    const [departments, setDepartments] = useState([]);
+    const [levels, setLevels] = useState([]);
+    const [schedule, setSchedule] = useState([]);
+    
     // State for storing the selected department and level
     const [selectedDept, setSelectedDept] = useState('');
     const [selectedLevel, setSelectedLevel] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    /**
+     * Fetch static metadata on mount
+     */
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [deptRes, levelRes] = await Promise.all([
+                    dataAPI.getDepartments(),
+                    dataAPI.getLevels()
+                ]);
+                setDepartments(deptRes.data);
+                setLevels(levelRes.data);
+            } catch (error) {
+                console.error("Failed to fetch metadata:", error);
+            }
+        };
+        fetchData();
+    }, []);
+
+    /**
+     * Fetch schedule when both filters are active
+     */
+    useEffect(() => {
+        if (selectedDept && selectedLevel) {
+            const fetchSchedule = async () => {
+                setLoading(true);
+                try {
+                    // Find IDs for the names (since our API filters by ID)
+                    const deptId = departments.find(d => d.name === selectedDept)?.id;
+                    const levelId = levels.find(l => l.name === selectedLevel)?.id;
+                    
+                    if (deptId && levelId) {
+                        const res = await scheduleAPI.getAll({ departmentId: deptId, levelId: levelId });
+                        setSchedule(res.data);
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch schedule:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchSchedule();
+        } else {
+            setSchedule([]);
+        }
+    }, [selectedDept, selectedLevel, departments, levels]);
 
     // Function to handle department change
     const handleDeptChange = (e) => {
@@ -16,23 +68,6 @@ const StudentSchedule = () => {
     const handleLevelChange = (e) => {
         setSelectedLevel(e.target.value);
     };
-
-    /**
-     * Filter the schedule based on user selection.
-     * 
-     * logic:
-     * 1. If no department or level is selected, we could show nothing or all. 
-     *    Here, we decided to show the schedule only when BOTH are selected for precision.
-     * 2. We use the .filter() method on the mock scheduleData array.
-     * 3. The condition checks if the item's department matches selectedDept
-     *    AND the item's level matches selectedLevel.
-     */
-    const filteredSchedule = scheduleData.filter((item) => {
-        return (
-            item.department === selectedDept &&
-            item.level === selectedLevel
-        );
-    });
 
     return (
         <div className="student-schedule-container">
@@ -45,8 +80,8 @@ const StudentSchedule = () => {
                     <label htmlFor="dept-select">Department:</label>
                     <select id="dept-select" value={selectedDept} onChange={handleDeptChange}>
                         <option value="">-- Select Department --</option>
-                        {departments.map((dept, index) => (
-                            <option key={index} value={dept}>{dept}</option>
+                        {departments.map((dept) => (
+                            <option key={dept.id} value={dept.name}>{dept.name}</option>
                         ))}
                     </select>
                 </div>
@@ -55,8 +90,8 @@ const StudentSchedule = () => {
                     <label htmlFor="level-select">Level:</label>
                     <select id="level-select" value={selectedLevel} onChange={handleLevelChange}>
                         <option value="">-- Select Level --</option>
-                        {levels.map((lvl, index) => (
-                            <option key={index} value={lvl}>{lvl} Level</option>
+                        {levels.map((lvl) => (
+                            <option key={lvl.id} value={lvl.name}>{lvl.name} Level</option>
                         ))}
                     </select>
                 </div>
@@ -64,32 +99,36 @@ const StudentSchedule = () => {
 
             {/* Schedule Display Section */}
             <div className="schedule-display">
-                {selectedDept && selectedLevel ? (
+                {loading ? (
+                    <p className="loading">Updating schedule...</p>
+                ) : selectedDept && selectedLevel ? (
                     <>
                         <h3>Schedule for {selectedDept} - {selectedLevel} Level</h3>
-                        {filteredSchedule.length > 0 ? (
-                            <table className="schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th>Day</th>
-                                        <th>Time</th>
-                                        <th>Course Code</th>
-                                        <th>Venue</th>
-                                        <th>Lecturer</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {filteredSchedule.map((classItem) => (
-                                        <tr key={classItem.id}>
-                                            <td>{classItem.day}</td>
-                                            <td>{classItem.time}</td>
-                                            <td>{classItem.courseCode}</td>
-                                            <td>{classItem.venue}</td>
-                                            <td>{classItem.lecturer}</td>
+                        {schedule.length > 0 ? (
+                            <div className="table-responsive">
+                                <table className="schedule-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Time</th>
+                                            <th>Course Code</th>
+                                            <th>Venue</th>
+                                            <th>Lecturer</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {schedule.map((classItem) => (
+                                            <tr key={classItem.id}>
+                                                <td data-label="Day">{classItem.day}</td>
+                                                <td data-label="Time">{classItem.timeSlot}</td>
+                                                <td data-label="Course Code">{classItem.Course?.code || classItem.CourseCode}</td>
+                                                <td data-label="Venue">{classItem.Venue?.name}</td>
+                                                <td data-label="Lecturer">{classItem.lecturer?.name}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         ) : (
                             <p className="no-data">No classes scheduled for this selection.</p>
                         )}
