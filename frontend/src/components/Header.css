@@ -1,17 +1,15 @@
 .main-header {
     background-color: var(--header-midnight);
     color: var(--text-light);
-    padding: 3rem 0;
-    margin-bottom: auto;
-    /* Push to bottom if content is short */
+    padding: 2rem 0; /* Reduced padding for more professional look */
     border-bottom: 4px solid var(--primary-sage);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
 .header-content {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: relative;
 }
 
 .auth-menu {
@@ -19,6 +17,7 @@
     align-items: center;
 }
 
+/* User Info & Role Tag */
 .user-info {
     display: flex;
     align-items: center;
@@ -31,30 +30,34 @@
 }
 
 .role-tag {
-    background-color: var(--primary-sage);
+    background: linear-gradient(135deg, var(--primary-sage), #6da05b);
     color: var(--header-midnight);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px; /* Pill shape for modern feel */
+    font-size: 0.7rem;
+    font-weight: 800;
     margin-left: 8px;
-    text-transform: uppercase;
+    box-shadow: 0 0 10px rgba(79, 121, 66, 0.4);
 }
 
+/* Auth Buttons */
 .logout-btn {
     background-color: transparent;
-    border: 1px solid var(--primary-sage);
+    border: 2px solid var(--primary-sage);
     color: var(--primary-sage);
-    padding: 6px 12px;
-    border-radius: 4px;
+    padding: 8px 18px;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 0.85rem;
-    transition: all 0.3s ease;
+    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .logout-btn:hover {
     background-color: var(--primary-sage);
-    color: var(--header-midnight);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(79, 121, 66, 0.3);
 }
 
 .login-link {
@@ -72,9 +75,14 @@
 }
 
 .logo h1 {
-    font-size: 1.3rem;
-    font-weight: 700;
+    font-size: 1.4rem;
+    font-weight: 800;
     letter-spacing: -0.5px;
+    transition: transform 0.3s ease;
+}
+
+.logo:hover h1 {
+    transform: scale(1.02);
 }
 
 .logo span {
@@ -84,13 +92,29 @@
 
 /* Mobile Adjustments */
 @media (max-width: 768px) {
+    .main-header {
+        padding: 1.5rem 0;
+    }
+
     .header-content {
         flex-direction: column;
-        gap: 15px;
-        text-align: center;
+        gap: 20px;
     }
+
+    .logo h1 {
+        font-size: 1.2rem;
+    }
+
     .user-info {
         flex-direction: column;
-        gap: 10px;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 12px;
+        width: 100%;
+    }
+
+    .welcome-text {
+        text-align: center;
     }
 }

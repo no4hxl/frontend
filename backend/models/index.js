@@ -46,9 +46,10 @@ const initDB = async () => {
         await sequelize.authenticate();
         console.log('--- Database Connected Successfully ---');
         
-        // sync({ alter: true }) attempts to update existing tables without dropping data
-        await sequelize.sync({ alter: true });
-        console.log('--- Models Synchronized ---');
+        // In test mode, we wipe the database to ensure clean runs
+        const isTest = process.env.NODE_ENV === 'test';
+        await sequelize.sync({ force: isTest, alter: !isTest });
+        console.log(`--- Models Synchronized (${isTest ? 'Wiped' : 'Altered'}) ---`);
     } catch (error) {
         console.error('Unable to connect to the database:', error);
     }

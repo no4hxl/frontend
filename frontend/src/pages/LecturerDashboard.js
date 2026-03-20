@@ -37,7 +37,10 @@ const LecturerDashboard = () => {
         levelId: '',
         courseCode: '',
         day: '',
-        timeSlot: '',
+        startHour: '08',
+        startMin: '00',
+        endHour: '10',
+        endMin: '00',
         venueId: ''
     });
 
@@ -46,7 +49,8 @@ const LecturerDashboard = () => {
 
     // Shared constants for timetable logic
     const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-    const timeSlots = ["08:00 - 10:00", "10:00 - 12:00", "12:00 - 14:00", "14:00 - 16:00", "16:00 - 18:00"];
+    const hours = Array.from({ length: 15 }, (_, i) => (i + 7).toString().padStart(2, '0')); // 07 to 21
+    const minutes = ["00", "15", "30", "45"];
 
     /**
      * Effect Hook: Fetches organizational metadata on component mount.
@@ -117,27 +121,40 @@ const LecturerDashboard = () => {
     const handleSetClass = async (e) => {
         e.preventDefault();
 
-        // Validation: Ensure all fields are selected before sending to API
-        if (!newClass.departmentId || !newClass.levelId || !newClass.courseCode || !newClass.day || !newClass.timeSlot || !newClass.venueId) {
+        // Validation check for frontend
+        if (!newClass.departmentId || !newClass.levelId || !newClass.courseCode || !newClass.day || !newClass.venueId) {
             toast.warning("Please fill in all required fields.");
+            return;
+        }
+
+        const startTime = `${newClass.startHour}:${newClass.startMin}`;
+        const endTime = `${newClass.endHour}:${newClass.endMin}`;
+
+        if (startTime >= endTime) {
+            toast.error("Finish time must be after start time.");
             return;
         }
 
         try {
             const payload = {
                 ...newClass,
+                startTime,
+                endTime,
                 lecturerId: user.id
             };
             await scheduleAPI.create(payload);
             toast.success("Class scheduled successfully!");
             
-            // Success: Reset form and refresh list silently
+            // Success: Reset form
             setNewClass({
                 departmentId: '',
                 levelId: '',
                 courseCode: '',
                 day: '',
-                timeSlot: '',
+                startHour: '08',
+                startMin: '00',
+                endHour: '10',
+                endMin: '00',
                 venueId: ''
             });
             fetchSchedules(true); 
@@ -190,7 +207,7 @@ const LecturerDashboard = () => {
                                 {myClasses.map((item) => (
                                     <tr key={item.id}>
                                         <td data-label="Day">{item.day}</td>
-                                        <td data-label="Time">{item.timeSlot}</td>
+                                        <td data-label="Time">{item.startTime} - {item.endTime}</td>
                                         <td data-label="Course">{item.Course?.code || item.CourseCode}</td>
                                         <td data-label="Venue">{item.Venue?.name}</td>
                                         <td data-label="Class">{item.Level?.name} Lvl, {item.Department?.name}</td>
@@ -264,11 +281,28 @@ const LecturerDashboard = () => {
                             </select>
                         </div>
                         <div className="form-group">
-                            <label>Time Slot</label>
-                            <select name="timeSlot" value={newClass.timeSlot} onChange={handleInputChange}>
-                                <option value="">Select Time</option>
-                                {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                            <label>Start Time</label>
+                            <div className="time-picker-row">
+                                <select name="startHour" value={newClass.startHour} onChange={handleInputChange}>
+                                    {hours.map(h => <option key={h} value={h}>{h}</option>)}
+                                </select>
+                                <span className="time-separator">:</span>
+                                <select name="startMin" value={newClass.startMin} onChange={handleInputChange}>
+                                    {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>End Time</label>
+                            <div className="time-picker-row">
+                                <select name="endHour" value={newClass.endHour} onChange={handleInputChange}>
+                                    {hours.map(h => <option key={h} value={h}>{h}</option>)}
+                                </select>
+                                <span className="time-separator">:</span>
+                                <select name="endMin" value={newClass.endMin} onChange={handleInputChange}>
+                                    {minutes.map(m => <option key={m} value={m}>{m}</option>)}
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -325,7 +359,7 @@ const LecturerDashboard = () => {
                                         {venueBookings.map(item => (
                                             <tr key={item.id}>
                                                 <td data-label="Day">{item.day}</td>
-                                                <td data-label="Time">{item.timeSlot}</td>
+                                                <td data-label="Time">{item.startTime} - {item.endTime}</td>
                                                 <td data-label="Course">{item.Course?.code || item.CourseCode}</td>
                                                 <td data-label="Lecturer">{item.lecturer?.name}</td>
                                             </tr>

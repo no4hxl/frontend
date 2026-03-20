@@ -13,7 +13,9 @@ const { initDB } = require('./models/index');
 dotenv.config();
 
 // Initialize Database connection and sync models
-initDB();
+if (process.env.NODE_ENV !== 'test') {
+    initDB();
+}
 
 // Import Route Handlers
 const authRoutes = require('./routes/authRoutes');
@@ -46,9 +48,14 @@ app.get('/', (req, res) => {
 
 /**
  * Start the Express Server
+ * Only listen if this file is run directly (not required for tests)
  */
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+module.exports = app;
 

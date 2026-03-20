@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Department, Venue, Level, Course } = require('../models/index');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { staticDataRules } = require('../middleware/validator');
 
 /**
  * dataRoutes.js
@@ -39,7 +40,7 @@ router.get('/:type', async (req, res) => {
  */
 
 // POST /api/data/:type - Create a new record (venue, dept, etc.)
-router.post('/:type', protect, authorize('admin'), async (req, res) => {
+router.post('/:type', protect, authorize('admin'), staticDataRules, async (req, res) => {
     const { type } = req.params;
     const Model = modelMap[type];
     if (!Model) return res.status(404).send();
@@ -53,7 +54,7 @@ router.post('/:type', protect, authorize('admin'), async (req, res) => {
 });
 
 // PUT /api/data/:type/:id - Update an existing record
-router.put('/:type/:id', protect, authorize('admin'), async (req, res) => {
+router.put('/:type/:id', protect, authorize('admin'), staticDataRules, async (req, res) => {
     const { type, id } = req.params;
     const Model = modelMap[type];
     if (!Model) return res.status(404).send();

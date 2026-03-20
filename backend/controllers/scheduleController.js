@@ -49,36 +49,48 @@ const getSchedules = async (req, res) => {
  */
 const createSchedule = async (req, res) => {
     try {
-        const { day, timeSlot, courseCode, lecturerId, venueId, levelId, departmentId } = req.body;
+        const { day, startTime, endTime, courseCode, lecturerId, venueId, levelId, departmentId } = req.body;
 
-        // 1. Conflict Check: Venue at the same time and day
-        const venueConflict = await Schedule.findOne({
-            where: { day, timeSlot, VenueId: venueId }
-        });
-        if (venueConflict) {
-            return res.status(409).json({ message: "Conflict: Venue is already booked for this time slot." });
-        }
+        /**
+         * Overlap Logic: (StartA < EndB) AND (EndA > StartB)
+         * This checks if the new time range overlaps with any existing record on the same day.
+         */
+        const timeOverlapFilter = {
+            day,
+            [Op.and]: [
+                { startTime: { [Op.lt]: endTime } },
+                { endTime: { [Op.gt]: startTime } }
+            ]
+        };
 
-        // 2. Conflict Check: Lecturer already booked for this day/time
-        const lecturerConflict = await Schedule.findOne({
-            where: { day, timeSlot, lecturerId }
+        // 1. Unified Conflict Check: Venue, Lecturer, or Student Group (Level+Dept)
+        const conflict = await Schedule.findOne({
+            where: {
+                ...timeOverlapFilter,
+                [Op.or]: [
+                    { VenueId: venueId },
+                    { lecturerId: lecturerId },
+                    { 
+                        [Op.and]: [
+                            { LevelId: levelId },
+                            { DepartmentId: departmentId }
+                        ]
+                    }
+                ]
+            }
         });
-        if (lecturerConflict) {
-            return res.status(409).json({ message: "Conflict: Lecturer already has another class scheduled at this time." });
-        }
 
-        // 3. Conflict Check: Resource clash for students (Same Level and Department)
-        const studentConflict = await Schedule.findOne({
-            where: { day, timeSlot, LevelId: levelId, DepartmentId: departmentId }
-        });
-        if (studentConflict) {
-            return res.status(409).json({ message: "Conflict: This Level/Department already has a class scheduled at this time." });
+        if (conflict) {
+            return res.status(400).json({ 
+                message: "Schedule conflict detected for venue, lecturer, or student group at this time." 
+            });
         }
 
         // 4. Create the schedule entry after all checks pass
         const newSchedule = await Schedule.create({
             day,
-            timeSlot,
+            startTime,
+            endTime,
             CourseCode: courseCode,
             lecturerId,
             VenueId: venueId,

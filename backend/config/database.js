@@ -19,10 +19,10 @@ if (process.env.DATABASE_URL) {
     });
 } else {
     // Development Fallback: SQLite
-    // This allows the app to work on your Windows machine immediately!
+    const isTest = process.env.NODE_ENV === 'test';
     sequelize = new Sequelize({
         dialect: 'sqlite',
-        storage: path.join(__dirname, '../database.sqlite'),
+        storage: isTest ? ':memory:' : path.join(__dirname, '../database.sqlite'),
         logging: false
     });
 }

@@ -70,10 +70,18 @@ To maintain a smooth UX, the Dashboards use a **Silent Refresh** pattern:
 - After a successful POST/PUT/DELETE operation, the frontend triggers a background `fetch()` without showing a global loading spinner.
 - This ensures the UI is always in sync with the server without disrupting the user's scroll position or view state.
 
+### 2. User Identity & Security Policy
+To ensure system integrity and a reliable audit trail, the following policies are enforced:
+- **Non-Editable Names**: To maintain a consistent identity for all scheduling actions, user names are fixed upon creation. Only **Roles** and **Passwords** can be updated by an Admin. This ensures that "Dr. Smith" remains "Dr. Smith" throughout the semester's records.
+- **Strict Server-Side Validation**: Every API request is filtered through a validation layer (`express-validator`). 
+    - **Security**: Prevents malicious scripts or malformed data from entering our persistent storage.
+    - **Note**: This may block requests if they use invalid formats (e.g., incorrect email syntax, end times earlier than start times, or empty fields).
+- **Password Safety**: All passwords are encrypted using `bcrypt` before being stored in the SQLite database.
+
 ---
 
 ## 🛠️ Tech Stack
 - **Frontend**: React, React-Router-DOM, React-Toastify, Axios.
-- **Backend**: Node.js, Express, Sequelize ORM.
+- **Backend**: Node.js, Express, Sequelize ORM, Express-Validator.
 - **Database**: SQLite3.
 - **Security**: Bcrypt (hashing), JWT (session).

@@ -1,5 +1,6 @@
+import { AnimatePresence, motion } from 'framer-motion';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
@@ -13,11 +14,23 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
-/**
- * Main App Component
- * 
- * Sets up the routing architecture and global state providers.
- */
+const PageWrapper = ({ children }) => {
+  const location = useLocation();
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        transition={{ duration: 0.3, ease: 'easeInOut' }}
+      >
+        {children}
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
 function App() {
   return (
     <AuthProvider>
@@ -26,32 +39,34 @@ function App() {
         <div className="App">
           <Header />
           <main style={{ minHeight: '80vh', padding: '20px' }}>
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/student" element={<StudentSchedule />} />
+            <PageWrapper>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/student" element={<StudentSchedule />} />
 
-              {/* Protected Admin Routes */}
-              <Route 
-                path="/admin-dashboard" 
-                element={
-                  <ProtectedRoute requiredRole="admin">
-                    <AdminDashboard />
-                  </ProtectedRoute>
-                } 
-              />
+                {/* Protected Admin Routes */}
+                <Route 
+                  path="/admin-dashboard" 
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
 
-              {/* Protected Lecturer Routes */}
-              <Route 
-                path="/lecturer-dashboard" 
-                element={
-                  <ProtectedRoute requiredRole="lecturer">
-                    <LecturerDashboard />
-                  </ProtectedRoute>
-                } 
-              />
-            </Routes>
+                {/* Protected Lecturer Routes */}
+                <Route 
+                  path="/lecturer-dashboard" 
+                  element={
+                    <ProtectedRoute requiredRole="lecturer">
+                      <LecturerDashboard />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Routes>
+            </PageWrapper>
           </main>
           <Footer />
         </div>

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getAllUsers, updateUserRole, resetUserPassword, deleteUser, addUser } = require('../controllers/userController');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { userRules } = require('../middleware/validator');
 
 /**
  * userRoutes.js
@@ -14,7 +15,7 @@ router.use(authorize('admin'));
 
 // Map routes to controller actions
 router.get('/', getAllUsers);                // List all users
-router.post('/', addUser);                   // Create a new user
+router.post('/', userRules, addUser);        // Create a new user
 router.put('/:id/role', updateUserRole);     // Change user permission level
 router.put('/:id/reset-password', resetUserPassword); // Administrative password override
 router.delete('/:id', deleteUser);           // Remove a user account

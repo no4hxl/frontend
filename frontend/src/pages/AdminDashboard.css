@@ -126,20 +126,25 @@
 }
 
 .list-item {
+    padding: 1rem 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 15px;
-    border-bottom: 1px solid #ecf0f1;
-    transition: background-color 0.2s;
+    background: white;
+    margin-bottom: 0.75rem;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.list-item:hover {
+    transform: translateX(5px);
+    border-color: var(--primary-sage); /* Assuming --primary-sage is defined elsewhere or will be added */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
 }
 
 .list-item:last-child {
     border-bottom: none;
-}
-
-.list-item:hover {
-    background-color: #fcfcfc;
 }
 
 .list-item span {

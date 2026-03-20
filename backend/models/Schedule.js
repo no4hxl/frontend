@@ -12,8 +12,13 @@ const Schedule = sequelize.define('Schedule', {
         type: DataTypes.STRING,
         allowNull: false
     },
-    // Time range (e.g., "08:00 - 10:00")
-    timeSlot: {
+    // Start Time (e.g., "08:00")
+    startTime: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    // End Time (e.g., "10:00")
+    endTime: {
         type: DataTypes.STRING,
         allowNull: false
     }

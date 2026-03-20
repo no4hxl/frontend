@@ -120,7 +120,7 @@ const StudentSchedule = () => {
                                         {schedule.map((classItem) => (
                                             <tr key={classItem.id}>
                                                 <td data-label="Day">{classItem.day}</td>
-                                                <td data-label="Time">{classItem.timeSlot}</td>
+                                                <td data-label="Time">{classItem.startTime} - {classItem.endTime}</td>
                                                 <td data-label="Course Code">{classItem.Course?.code || classItem.CourseCode}</td>
                                                 <td data-label="Venue">{classItem.Venue?.name}</td>
                                                 <td data-label="Lecturer">{classItem.lecturer?.name}</td>

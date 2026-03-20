@@ -136,9 +136,13 @@ const seed = async () => {
             const venue = venues.find(v => v.name === s.venue);
             const lecturer = lecturers.find(l => l.name === s.lecturer);
             
+            // Extract startTime and endTime from the seed string "08:00 - 10:00"
+            const [startTime, endTime] = s.time.split(' - ');
+
             await Schedule.create({
                 day: s.day,
-                timeSlot: s.time,
+                startTime,
+                endTime,
                 DepartmentId: dept.id,
                 LevelId: level.id,
                 VenueId: venue.id,
