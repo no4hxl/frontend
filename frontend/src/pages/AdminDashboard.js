@@ -1,3 +1,15 @@
+/**
+ * @file AdminDashboard.js
+ * @description Central administrative control panel for the application.
+ * Provides granular management of users, departments, venues, and curriculum.
+ * 
+ * Features:
+ * - Tabbed resource navigation
+ * - Dynamic data synchronization (eager & silent fetches)
+ * - User role management & password recovery
+ * - Unified CRUD interface for organizational entities.
+ */
+
 import React, { useState, useEffect } from 'react';
 import TabBar from '../components/admin/TabBar';
 import AddItemForm from '../components/admin/AddItemForm';
@@ -9,23 +21,33 @@ import { dataAPI, userAPI } from '../services/api';
 import './AdminDashboard.css';
 
 /**
- * AdminDashboard Component
- * 
- * The control center for administrators. 
- * Allows managing users, departments, venues, levels, and courses.
- * Uses a tabbed interface and background refreshes for a seamless experience.
+ * @component AdminDashboard
+ * @description Root component for the Admin view.
  */
 const AdminDashboard = () => {
-    // Current active tab state (defaults to 'users')
+    
+    /**
+     * @state activeTab
+     * @description Controls which domain (users, depts, etc.) is currently being managed.
+     */
     const [activeTab, setActiveTab] = useState('users'); 
     
-    // List of items being displayed for the current tab
+    /**
+     * @state items
+     * @description Local cache of records retrieved from the server for the current tab.
+     */
     const [items, setItems] = useState([]);
     
-    // Global loading state for tab transitions
+    /**
+     * @state loading
+     * @description Toggles visibility of the global data synchronization spinner.
+     */
     const [loading, setLoading] = useState(false);
 
-    // Configuration for tabs: defines labels and singular terms for UI text
+    /**
+     * @constant tabConfig
+     * @description Domain metadata used for dynamic UI string generation (labels, titles).
+     */
     const tabConfig = {
         users: { label: 'Users', singular: 'User' },
         departments: { label: 'Departments', singular: 'Department' },
@@ -35,36 +57,38 @@ const AdminDashboard = () => {
     };
 
     /**
-     * fetchTabData
-     * Synchronizes the dashboard state with the backend server.
+     * @function fetchTabData
+     * @description Synchronizes the component state with the backend database.
      * 
-     * @param {boolean} isSubscribed - Flag to handle component unmounting safely.
-     * @param {boolean} isSilent - If true, re-fetches without showing a loading spinner.
+     * @async
+     * @param {boolean} isSubscribed - Safety flag to prevent state updates on unmounted component.
+     * @param {boolean} isSilent - If true, reloads data in the background without UI blocking.
      */
     const fetchTabData = async (isSubscribed = true, isSilent = false) => {
-        // Show spinner only during full tab switches to avoid UI flicker
+        // UI Polish: Only show spinner on major context switches
         if (!isSilent) {
             setLoading(true);
-            setItems([]); 
+            setItems([]); // Clear list during transition
         }
 
         try {
             let fetchedData = [];
+            
+            // Domain-specific fetch logic
             if (activeTab === 'users') {
-                // Fetch user-specific data (name, email, role)
                 const res = await userAPI.getAll();
                 fetchedData = res.data;
             } else {
-                // Fetch generic organizational data
+                // Generic organizational data
                 const res = await dataAPI.getAll(activeTab);
                 
-                // Normalization: Map diverse data structures to a unified {id, name} format for rendering
+                // Normalization: Canonical data structure {id, name} for ItemList consumption
                 fetchedData = res.data.map(item => {
                     const id = item.id || item.code;
                     let name = item.name;
                     
+                    // Specific formatting for the Course domain
                     if (activeTab === 'courses') {
-                        // Display courses as "CSC101 - Introduction..."
                         name = item.title ? `${item.code} - ${item.title}` : item.code;
                     }
                     
@@ -77,8 +101,8 @@ const AdminDashboard = () => {
             }
         } catch (error) {
             if (isSubscribed) {
-                console.error(`Sync error (${activeTab}):`, error);
-                toast.error(`Unable to synchronize ${activeTab} with server.`);
+                console.error(`[AdminSync] Fail (${activeTab}):`, error);
+                toast.error(`Sync error: Unable to retrieve latest ${activeTab}.`);
             }
         } finally {
             if (isSubscribed && !isSilent) {
@@ -88,54 +112,56 @@ const AdminDashboard = () => {
     };
 
     /**
-     * Effect Hook: Re-fetches data whenever the active tab changes.
+     * @lifecycle useEffect
+     * @trigger activeTab changes
+     * @description Dispatches data fetch whenever the user navigates to a different dashboard tab.
      */
     useEffect(() => {
         let isSubscribed = true;
-        fetchTabData(isSubscribed, false); // Full load on tab change
+        fetchTabData(isSubscribed, false); 
         return () => { isSubscribed = false; };
     }, [activeTab]);
 
     /**
-     * handleTabChange
-     * Updates the active tab state, triggering the useEffect above.
+     * @handler handleTabChange
+     * @param {string} tabName - Target tab ID.
      */
     const handleTabChange = (tabName) => {
         setActiveTab(tabName);
     };
 
     /**
-     * handleAddItem
-     * Sends a POST request to add a new record.
-     * Triggers a silent refresh on success to preserve UI state.
+     * @handler handleAddItem
+     * @description Persists a new record to the backend.
      * 
-     * @param {string|Object} nameOrPayload - Can be a simple string or a user object.
+     * @param {string|Object} nameOrPayload - Canonical data for the new item.
      */
     const handleAddItem = async (nameOrPayload) => {
         try {
             if (activeTab === 'users') {
                 await userAPI.create(nameOrPayload);
-                toast.success('User added successfully!');
+                toast.success('User account provisioned successfully.');
             } else {
                 const name = nameOrPayload;
-                // Parse course code/title if needed
+                // Deconstruct course titles if necessary
                 const payload = activeTab === 'courses' 
                     ? { code: name.split(' - ')[0], title: name.split(' - ')[1] || name } 
                     : { name };
                     
                 await dataAPI.create(activeTab, payload);
-                toast.success(`${tabConfig[activeTab].singular} added successfully!`);
+                toast.success(`${tabConfig[activeTab].singular} synchronized.`);
             }
-            // Background refresh to show new item instantly
+            
+            // Post-action: Silently refresh list to reflect changes
             fetchTabData(true, true);
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to add item.");
+            toast.error(error.response?.data?.message || "Operation failed.");
         }
     };
 
     /**
-     * handleEditItem
-     * Sends a PUT request to update an existing record name.
+     * @handler handleEditItem
+     * @description Requests a name/title update for an existing resource.
      */
     const handleEditItem = async (itemId, newName) => {
         try {
@@ -144,73 +170,77 @@ const AdminDashboard = () => {
                 : { name: newName };
 
             await dataAPI.update(activeTab, itemId, payload);
-            toast.info(`${tabConfig[activeTab].singular} updated.`);
-            fetchTabData(true, true); // Update list in place
+            toast.info(`Updated: ${tabConfig[activeTab].singular}`);
+            fetchTabData(true, true); 
         } catch (error) {
-            toast.error("Failed to update item.");
+            toast.error("Resource update failed.");
         }
     };
 
     /**
-     * handleDeleteItem
-     * Sends a DELETE request to remove a record from the database.
+     * @handler handleDeleteItem
+     * @description Triggers resource deletion logic.
      */
     const handleDeleteItem = async (itemId) => {
         try {
             if (activeTab === 'users') {
                 await userAPI.delete(itemId);
-                toast.error('User deleted.');
+                toast.error('User record permanently removed.');
             } else {
                 await dataAPI.delete(activeTab, itemId);
-                toast.error(`${tabConfig[activeTab].singular} deleted.`);
+                toast.error(`${tabConfig[activeTab].singular} purged.`);
             }
-            fetchTabData(true, true); // Instantly remove from list
+            fetchTabData(true, true);
         } catch (error) {
-            toast.error(error.response?.data?.message || "Failed to delete item.");
+            toast.error(error.response?.data?.message || "Deletion failed.");
         }
     };
 
     /**
-     * handleRoleChange (User specific)
-     * Promotes or demotes user permission levels.
+     * @handler handleRoleChange
+     * @description Adjusts user authorization levels (Admin <-> Lecturer).
      */
     const handleRoleChange = async (userId, newRole) => {
         try {
             await userAPI.updateRole(userId, newRole);
-            toast.success("User role updated successfully.");
+            toast.success("Permission role adjusted.");
             fetchTabData(true, true);
         } catch (error) {
-            toast.error("Failed to update user role.");
+            toast.error("Role update failed.");
         }
     };
 
     /**
-     * handleResetPassword (User specific)
-     * Resets a user's password to the system default ('password123').
+     * @handler handleResetPassword
+     * @description Administrative override for user password locks.
      */
     const handleResetPassword = async (userId) => {
-        if (window.confirm("Are you sure you want to reset this user's password to 'password123'?")) {
+        if (window.confirm("Perform administrative password reset to system default?")) {
             try {
                 await userAPI.resetPassword(userId);
-                toast.success("Password reset successfully.");
+                toast.success("Reset Complete: Default credentials restored.");
                 fetchTabData(true, true);
             } catch (error) {
-                toast.error("Failed to reset password.");
+                toast.error("Reset operation failed.");
             }
         }
     };
 
+    /**
+     * @constant currentLabel
+     * @description Display name for the currently selected resource type.
+     */
     const currentLabel = tabConfig[activeTab].singular;
 
     return (
         <div className="admin-dashboard">
             <header className="dashboard-header">
-                <h2>Detail Administrator Dashboard</h2>
-                <p>Manage system structure and resources.</p>
+                <h2>Administrative Control Hub</h2>
+                <p>Global systems management and resource orchestration.</p>
             </header>
 
             <div className="dashboard-container">
-                {/* Reusable Tab Bar */}
+                {/* Visual Tab Selection */}
                 <TabBar
                     tabConfig={tabConfig}
                     activeTab={activeTab}
@@ -219,12 +249,14 @@ const AdminDashboard = () => {
 
                 <main className="dashboard-content">
                     {loading ? (
-                        <p className="loading-text">Synchronizing with server...</p>
+                        <div className="loader-container">
+                            <p className="loading-text">Synchronizing platform data...</p>
+                        </div>
                     ) : (
-                        <div className="tab-content">
-                            <h3>Manage {tabConfig[activeTab].label}</h3>
+                        <div className="tab-content transition-fade">
+                            <h3>{tabConfig[activeTab].label} Management</h3>
 
-                            {/* Conditional Rendering: Users tab has specialized forms */}
+                            {/* DOM Logic: Conditional form selection based on active tab context */}
                             {activeTab === 'users' ? (
                                 <>
                                     <AddUserForm existingUsers={items} onAdd={handleAddItem} />
@@ -260,4 +292,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
 

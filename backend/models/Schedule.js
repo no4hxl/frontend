@@ -1,28 +1,52 @@
+/**
+ * @file Schedule.js
+ * @description Database Schema for Timetable Entries.
+ * Each 'Schedule' instance represents a unique lecture block. 
+ * Foreign keys (CourseId, UserId as Lecturer, VenueId, etc.) are injected 
+ * by the association layer in models/index.js.
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 /**
- * Schedule Model
- * Represents a single lecture slot in the timetable.
- * Links together Course, Lecturer, Venue, Department, and Level.
+ * @model Schedule
+ * @description High-level representation of an academic booking.
  */
 const Schedule = sequelize.define('Schedule', {
-    // Day of the week (e.g., "Monday")
+    /** 
+     * @property day
+     * @description Chronological context. Typically 'Monday' through 'Friday'.
+     */
     day: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    // Start Time (e.g., "08:00")
+
+    /** 
+     * @property startTime
+     * @description Operational commencement in 24-hour format (HH:mm). 
+     */
     startTime: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    // End Time (e.g., "10:00")
+
+    /** 
+     * @property endTime
+     * @description Planned conclusion in 24-hour format (HH:mm).
+     */
     endTime: {
         type: DataTypes.STRING,
         allowNull: false
     }
+}, {
+    // Indexes to optimize lookups in the scheduling engine
+    indexes: [
+        { fields: ['day'] }
+    ]
 });
 
 module.exports = Schedule;
+
 

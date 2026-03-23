@@ -1,24 +1,37 @@
+/**
+ * @file AuthContext.js
+ * @description Centralized Authentication & Authorization State Management for the React Frontend.
+ * Uses React Context API to provide user identity, roles, and auth methods (login/logout) 
+ * across the entire component tree.
+ */
+
 import React, { createContext, useState, useContext } from 'react';
 import { authAPI } from '../services/api';
 
 /**
- * AuthContext.js
- * 
- * Central State Management for Authentication.
- * This context provides the current authenticated user's data and 
- * essential methods (login, logout) to the entire application.
+ * @context AuthContext
+ * @description The raw React context object for authentication data.
  */
 const AuthContext = createContext(null);
 
 /**
- * AuthProvider
- * Wrapper component that provides the AuthContext to its children.
- * Handles persistence via localStorage and role normalization.
+ * @component AuthProvider
+ * @description Provider component that encapsulates the application and manages
+ * authentication lifecycle, persistence, and role-based logic.
+ * 
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - Sub-components requiring access to auth state.
  */
 export const AuthProvider = ({ children }) => {
+    
     /**
-     * Helper to normalize user data.
-     * Ensures roles are consistently lowercase and trimmed to prevent routing issues.
+     * @function normalizeUser
+     * @private
+     * @description Sanitizes and standardizes incoming user data from the API.
+     * Prevents common bugs related to trailing spaces or inconsistent casing in roles.
+     * 
+     * @param {Object} userData - Raw user object from server/storage.
+     * @returns {Object|null} Normalized user object.
      */
     const normalizeUser = (userData) => {
         if (!userData) return null;
@@ -29,14 +42,15 @@ export const AuthProvider = ({ children }) => {
     };
 
     /**
-     * User State
-     * Initialized by checking 'lecture_auth_user' and 'lecture_auth_token' in localStorage.
-     * This ensures the user stays logged in across page refreshes.
+     * @state user
+     * @description Core authentication state. 
+     * Initialized via a lazy initializer function to safely restore session from localStorage.
      */
     const [user, setUser] = useState(() => {
         const savedUserData = localStorage.getItem('lecture_auth_user');
         const token = localStorage.getItem('lecture_auth_token');
         
+        // Re-hydrate session if both user data and JWT token exist
         if (savedUserData && token) {
             try {
                 const parsedUser = JSON.parse(savedUserData);
@@ -45,11 +59,12 @@ export const AuthProvider = ({ children }) => {
                     isAuthenticated: true
                 };
             } catch (e) {
-                console.error("Failed to parse saved user", e);
+                console.error("[AuthContext] hydration failure:", e);
+                // Fallback to guest state on corruption
             }
         }
         
-        // Default guest state
+        // Initial / Guest state definition
         return {
             email: null,
             name: null,
@@ -59,16 +74,18 @@ export const AuthProvider = ({ children }) => {
     });
 
     /**
-     * login
-     * Authenticates credentials against the backend.
-     * On success: Updates state, stores token/user in localStorage.
+     * @function login
+     * @description Performs secure authentication via the backend API.
+     * Synchronizes React state with local browser storage on success.
      * 
-     * @param {string} email 
-     * @param {string} password 
-     * @returns {Promise<Object>} Object indicating success or failure message.
+     * @async
+     * @param {string} email - User's unique identifier.
+     * @param {string} password - User's plaintext credentials.
+     * @returns {Promise<{success: boolean, user?: Object, message?: string}>} 
      */
     const login = async (email, password) => {
         try {
+            // API call to backend authentication endpoint
             const response = await authAPI.login({ email, password });
             const { token, user: userData } = response.data;
 
@@ -77,13 +94,17 @@ export const AuthProvider = ({ children }) => {
                 isAuthenticated: true
             };
 
+            // 1. Update In-Memory React State
             setUser(finalUser);
+            
+            // 2. Persist to LocalStorage for session continuity across tabs/refreshes
             localStorage.setItem('lecture_auth_token', token);
             localStorage.setItem('lecture_auth_user', JSON.stringify(finalUser));
             
+            console.log(`[AuthContext] Login successful for: ${finalUser.email}`);
             return { success: true, user: finalUser };
         } catch (error) {
-            console.error("Login failed:", error);
+            console.error("[AuthContext] Auth logic failed:", error);
             return { 
                 success: false, 
                 message: error.response?.data?.message || "Login failed. Please check your credentials." 
@@ -92,8 +113,8 @@ export const AuthProvider = ({ children }) => {
     };
 
     /**
-     * logout
-     * Clears user state and removes authentication data from the browser.
+     * @function logout
+     * @description Resets authentication state and purges sensitive tokens from the browser.
      */
     const logout = () => {
         const resetUser = {
@@ -102,12 +123,21 @@ export const AuthProvider = ({ children }) => {
             role: null,
             isAuthenticated: false
         };
+        
+        // Purge state
         setUser(resetUser);
+        
+        // Purge storage
         localStorage.removeItem('lecture_auth_token');
         localStorage.removeItem('lecture_auth_user');
+        
+        console.log("[AuthContext] User logged out successfully.");
     };
 
-    // Helper derived booleans for cleaner role-based rendering in components
+    /**
+     * DERIVED PERMISSIONS
+     * Simplified boolean flags for cleaner conditional rendering in the UI.
+     */
     const isAdmin = user.isAuthenticated && user.role === 'admin';
     const isLecturer = user.isAuthenticated && user.role === 'lecturer';
 
@@ -119,18 +149,22 @@ export const AuthProvider = ({ children }) => {
 };
 
 /**
- * useAuth
- * Custom hook for easy access to AuthContext.
- * Usage: const { user, login, logout } = useAuth();
+ * @hook useAuth
+ * @description Custom hook providing a safe and type-safe interface for components 
+ * to consume the AuthContext.
+ * 
+ * @throws {Error} If called outside of an <AuthProvider> wrapper.
+ * @returns {Object} { user, login, logout, isAdmin, isLecturer }
  */
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
+        throw new Error('useAuth must be used within an AuthProvider subtree.');
     }
     return context;
 };
 
 export default AuthContext;
+
 
 

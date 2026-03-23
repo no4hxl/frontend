@@ -1,47 +1,81 @@
+/**
+ * @file User.js
+ * @description Database Schema for User Identity and Access Control.
+ * Defines the structure for all system actors (Administrators, Lecturers, and Students).
+ * 
+ * Security Note:
+ * Passwords stored here MUST be pre-hashed (e.g., via bcrypt) before persistence.
+ */
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
 /**
- * User Model
- * Represents anyone who can log into the system (Admins, Lecturers, Students).
- * Stores credentials and assigned system roles.
+ * @model User
+ * @description Represents a registered user within the institutional hierarchy.
  */
 const User = sequelize.define('User', {
+    /** 
+     * @property id
+     * @description Primary surrogate key. 
+     */
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    // Full display name of the user
+
+    /** 
+     * @property name
+     * @description Full human-readable display name (e.g., "Dr. John Doe").
+     */
     name: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    // Unique email used for authentication
+
+    /** 
+     * @property email
+     * @description Unique identifier for authentication and communication.
+     * Includes built-in Sequelize validation for RFC 5322 compliance.
+     */
     email: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true,
         validate: {
-            isEmail: true
+            isEmail: {
+                msg: "Must be a valid email address format."
+            }
         }
     },
-    // Bcrypt hashed password
+
+    /** 
+     * @property password
+     * @description Cryptographic hash of the user's secret credentials.
+     * @security Store ONLY hashes, never plaintext.
+     */
     password: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    /**
-     * Role determines access levels:
-     * - admin: Can manage all data and users.
-     * - lecturer: Can schedule and manage their own classes.
-     * - student: View-only access (default).
+
+    /** 
+     * @property role
+     * @description Permission discriminator. Controls RBAC (Role-Based Access Control) behavior.
+     * - 'admin': Total system orchestration.
+     * - 'lecturer': Teaching and schedule management.
+     * - 'student': Timetable consumption and profile viewing.
      */
     role: {
         type: DataTypes.ENUM('admin', 'lecturer', 'student'),
         defaultValue: 'student'
     }
+}, {
+    // Standard timestamps (createdAt, updatedAt) for audit trails
+    timestamps: true 
 });
 
 module.exports = User;
+
 

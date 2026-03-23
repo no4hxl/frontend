@@ -1,43 +1,70 @@
+/**
+ * @file ProtectedRoute.js
+ * @description Higher-Order Component (HOC) for declarative routing security.
+ * Intercepts navigation to private routes and enforces authentication & authorization rules.
+ * 
+ * Flow:
+ * 1. Verify Authentication Status (JWT validity).
+ * 2. Validate Authorization (Role-Based Access Control).
+ * 3. Handle Redirection with history preservation.
+ */
+
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 /**
- * ProtectedRoute Component
+ * @component ProtectedRoute
+ * @description Wraps sensitive components to prevent unauthorized access.
  * 
- * Secures a route by checking authentication status and optional role requirements.
- * Using case-insensitive comparisons for roles to ensure reliability.
- * 
- * @param {React.ReactNode} children - The component to render if authorized
- * @param {string} requiredRole - Optional role requirement ('admin' or 'lecturer')
+ * @param {Object} props
+ * @param {React.ReactNode} props.children - The target component/page to secure.
+ * @param {string} [props.requiredRole] - Optional permission level (e.g., 'admin', 'lecturer').
  */
 const ProtectedRoute = ({ children, requiredRole }) => {
+    
+    /** 
+     * @context user
+     * @description Destructured auth state from the global provider.
+     */
     const { user } = useAuth();
+    
+    /** 
+     * @hook useLocation
+     * @description Captured current path to allow "deep linking" after login.
+     */
     const location = useLocation();
 
-    // 1. Check if user is authenticated
+    // PHASE 1: Authentication Guard
     if (!user.isAuthenticated) {
-        // Redirect to login page, saving the current location for POST-login redirect
+        /**
+         * Not signed in: Redirect to login.
+         * 'state' prop allows the login page to redirect the user back to their original 
+         * destination (location.pathname) after successful entry.
+         */
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // 2. Check Role Requirement (if specified)
+    // PHASE 2: Authorization (RBAC) Guard
     if (requiredRole) {
-        const userRole = user.role?.toLowerCase().trim();
+        // Normalization: Ensure canonical comparison by trimming and lowercasing roles.
+        const userRole = user.role ? user.role.toLowerCase().trim() : '';
         const targetRole = requiredRole.toLowerCase().trim();
 
         if (userRole !== targetRole) {
-            // Log rejection for debugging purposes (often role casing issues)
-            console.warn(`Access Denied: Path requires "${targetRole}" role, but user has "${userRole}". Redirecting to Home.`);
-            
-            // Authorized but lacks permissions: Redirect to safe default (Home)
+            /**
+             * Signed in but insufficient permissions: Safe redirect to Home.
+             * This prevents accidental access to the Dashboard from a Student account.
+             */
+            console.warn(`[Guard Security] Unauthorized Access Attempt to ${location.pathname}. Path requires "${targetRole}", user is "${userRole}".`);
             return <Navigate to="/" replace />;
         }
     }
 
-    // 3. Authorized - render the protected content
+    // PHASE 3: Content Approval
     return children;
 };
 
 export default ProtectedRoute;
+
 
